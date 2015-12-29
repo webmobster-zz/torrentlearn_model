@@ -5,11 +5,13 @@ use std::cmp::Ordering::{Less,Equal,Greater};
 use std::sync::{Arc, Mutex};
 
 
+const ARRAY_SIZE: usize = 1000;
+
 //FIXME: Add back in a way of evaluating, probably not a billion comm channels
 pub struct GlobalState
 {
 	//Persistant after evaluation and after selection and mutable by multiple threads
-	pub vec: Arc<Mutex<Vec<u64>>>,
+	pub vec: Vec<u64>,
 
 	pub graph: Graph,
 	pub life: Option<Arc<Mutex<u64>>>,
@@ -40,20 +42,19 @@ impl GlobalState
 	pub fn new(memory: Vec<u64>, graph: Graph) -> GlobalState
 	{
 
-		GlobalState{vec: Arc::new(Mutex::new(memory)), life: None,graph: graph, fitness: None, thread_count: None}
+		GlobalState{vec: memory, life: None,graph: graph, fitness: None, thread_count: None}
 
 	}
 	//drops input, output and threadcount
 	pub fn unique_copy(&mut self) -> GlobalState
 	{
 
-		let veclock =self.vec.lock().unwrap();
 		let life =self.life.clone().unwrap();
 		let lifelock= life.lock().unwrap();
 
 		let fitness =self.fitness.clone().unwrap();
 		let fitnesslock= fitness.lock().unwrap();
-		GlobalState{vec: Arc::new(Mutex::new(veclock.clone())),  life: Some(Arc::new(Mutex::new(lifelock.clone()))),graph:  self.graph.clone(), thread_count: None,fitness: Some(Arc::new(Mutex::new(fitnesslock.clone())))}
+		GlobalState{vec: self.vec.clone(),  life: Some(Arc::new(Mutex::new(lifelock.clone()))),graph:  self.graph.clone(), thread_count: None,fitness: Some(Arc::new(Mutex::new(fitnesslock.clone())))}
 	}
 
 	pub fn initialize(&mut self,life: u64 )
@@ -66,8 +67,7 @@ impl GlobalState
 	//FIXME
 	pub fn unique_graphvec_copy(&self) -> (Graph,Vec<u64>)
 	{
-		let veclock =self.vec.lock().unwrap();
-		(self.graph.clone(),veclock.clone())
+		(self.graph.clone(),self.vec.clone())
 
 	}
 	pub fn get_fitness(&self) -> u64
@@ -176,7 +176,7 @@ impl Ord for GlobalState
 pub struct LocalState
 {
 	pub node: Option<usize>,
-	pub array: [u64;1000],
+	pub local_array: [u64;ARRAY_SIZE]
 
 }
 
@@ -185,7 +185,7 @@ impl LocalState
 	pub fn new() -> LocalState
 	{
 
-		LocalState{node: Some(0), array: [0;1000]}
+		LocalState{node: Some(0), local_array: [0; ARRAY_SIZE]}
 
 	}
 
@@ -195,7 +195,7 @@ impl Clone for LocalState
 {
 	fn clone(&self) -> LocalState
 	{
-		LocalState{node: self.node, array: self.array}
+		LocalState{node: self.node, local_array: self.local_array}
 	}
 
 }
