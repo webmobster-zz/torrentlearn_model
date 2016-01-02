@@ -1,4 +1,4 @@
-use super::UUID;
+use super::Operator;
 use std::cmp::min;
 use std::cmp::max;
 
@@ -10,7 +10,7 @@ pub struct Graph
 }
 
 #[derive(Clone,Debug)]
-pub struct Node( pub UUID,pub Option<usize>,pub Option<usize>);
+pub struct Node( pub Operator,pub Option<usize>,pub Option<usize>);
 
 
 
@@ -41,7 +41,7 @@ impl Graph
 
 
 
-	pub fn get_operator(&self, mut index: usize) -> UUID
+	pub fn get_operator(&self, mut index: usize) -> Operator
 	{
 		index = index % self.list.len();
 
@@ -54,7 +54,15 @@ impl Graph
 
 	}
 
+	// FIXME
+	/// Deprecated
 	pub fn get_size(& self) -> usize
+	{
+		self.list.len()
+	}
+
+
+	pub fn len(& self) -> usize
 	{
 		self.list.len()
 

@@ -7,11 +7,25 @@ use std::sync::{Arc, Mutex};
 
 const ARRAY_SIZE: usize = 1000;
 
+
+pub trait FitnessEvaluator
+{
+	fn intialize(&mut self);
+	fn send_byte(&mut self, byte: u8);
+	fn get_byte(&mut self, byte: u8);
+	fn finish(&mut self) -> u64;
+
+}
+
+pub type GlobalMemory = Vec<u64>;
+
 //FIXME: Add back in a way of evaluating, probably not a billion comm channels
-pub struct GlobalState
+pub struct GlobalState<T: FitnessEvaluator>
 {
 	//Persistant after evaluation and after selection and mutable by multiple threads
-	pub vec: Vec<u64>,
+	//using unsafe methods
+	//TODO: Think about this
+	pub vec: GlobalMemory,
 
 	pub graph: Graph,
 	pub life: Option<Arc<Mutex<u64>>>,
@@ -24,44 +38,47 @@ pub struct GlobalState
 	//Persistant after evaluation but not after selection
 	pub fitness: Option<Arc<Mutex<u64>>>,
 
-}
-
-impl Clone for GlobalState
-{
-	fn clone(&self) ->GlobalState
-	{
-		GlobalState{vec: self.vec.clone(), life: self.life.clone(),graph: self.graph.clone(),thread_count: self.thread_count.clone(),fitness: self.fitness.clone()}
-	}
+	pub fitness_evaluator: Option<T>
 
 }
 
-impl GlobalState
+impl<T: FitnessEvaluator> Clone for GlobalState<T>
+{
+	fn clone(&self) ->GlobalState<T>
+	{
+		GlobalState{vec: self.vec.clone(), life: self.life.clone(),graph: self.graph.clone(),thread_count: self.thread_count.clone(),fitness: self.fitness.clone(),fitness_evaluator: None}
+	}
+
+}
+
+impl<T: FitnessEvaluator> GlobalState<T>
 {
 
 
-	pub fn new(memory: Vec<u64>, graph: Graph) -> GlobalState
+	pub fn new(memory: Vec<u64>, graph: Graph) -> GlobalState<T>
 	{
 
-		GlobalState{vec: memory, life: None,graph: graph, fitness: None, thread_count: None}
+		GlobalState{vec: memory, life: None,graph: graph, fitness: None, thread_count: None, fitness_evaluator: None}
 
 	}
-	//drops input, output and threadcount
-	pub fn unique_copy(&mut self) -> GlobalState
+
+	pub fn evaluated_is_sane(&self ) -> bool
 	{
-
-		let life =self.life.clone().unwrap();
-		let lifelock= life.lock().unwrap();
-
-		let fitness =self.fitness.clone().unwrap();
-		let fitnesslock= fitness.lock().unwrap();
-		GlobalState{vec: self.vec.clone(),  life: Some(Arc::new(Mutex::new(lifelock.clone()))),graph:  self.graph.clone(), thread_count: None,fitness: Some(Arc::new(Mutex::new(fitnesslock.clone())))}
+		self.life.is_some() && *self.thread_count.as_ref().unwrap().lock().unwrap() == 0 && self.fitness.is_some()
 	}
 
-	pub fn initialize(&mut self,life: u64 )
+	pub fn cleanup(&mut self)
+	{
+		self.fitness_evaluator=None;
+	}
+
+
+	pub fn initialize(&mut self,life: u64, problem: T )
 	{
 		self.life=Some(Arc::new(Mutex::new(life)));
-		self.thread_count = Some(Arc::new(Mutex::new(1)));
-		self.fitness=Some(Arc::new(Mutex::new(0)));
+		self.thread_count=None;
+		self.fitness=None;
+		self.fitness_evaluator=Some(problem);
 	}
 
 	//FIXME
@@ -81,20 +98,17 @@ impl GlobalState
 
 
 //These are all to allow sorting based on fitness
-
 //FIXME: This is probably a bad idea
-
-
 //Need to remeber to not deadlock if self and other are the same
-impl Eq for GlobalState
+impl<T: FitnessEvaluator> Eq for GlobalState<T>
 {
 
 }
 
-impl PartialOrd for GlobalState
+impl<T: FitnessEvaluator> PartialOrd for GlobalState<T>
 {
 
-	fn partial_cmp(&self, other: &GlobalState) -> Option<Ordering>
+	fn partial_cmp(&self, other: &GlobalState<T>) -> Option<Ordering>
 	{
 		let lockself: u64;
 		let lockother: u64;
@@ -119,10 +133,10 @@ impl PartialOrd for GlobalState
 
 
 
-impl PartialEq for GlobalState
+impl<T: FitnessEvaluator> PartialEq for GlobalState<T>
 {
 
-	fn  eq(&self, other: &GlobalState) -> bool
+	fn  eq(&self, other: &GlobalState<T>) -> bool
 	{
 		let lockself: u64;
 		let lockother: u64;
@@ -144,10 +158,10 @@ impl PartialEq for GlobalState
 
 }
 
-impl Ord for GlobalState
+impl<T: FitnessEvaluator> Ord for GlobalState<T>
 {
 
-	fn cmp(&self, other: &GlobalState) -> Ordering
+	fn cmp(&self, other: &GlobalState<T>) -> Ordering
 	{
 
 
@@ -176,7 +190,7 @@ impl Ord for GlobalState
 pub struct LocalState
 {
 	pub node: Option<usize>,
-	pub local_array: [u64;ARRAY_SIZE]
+	pub local_array: [u8;ARRAY_SIZE]
 
 }
 
