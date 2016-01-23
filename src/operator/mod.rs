@@ -1,7 +1,4 @@
-use super::GlobalMemory;
-
 use super::FitnessEvaluator;
-use super::LocalState;
 use std::str::FromStr;
 use std::fmt;
 use rand::Rng;
@@ -22,7 +19,7 @@ pub struct Operator
 	uuid: UUID,
 	special: SpecialOperator,
 	successors: u8,
-	op: fn(&mut GlobalMemory, &mut LocalState) -> bool
+	op: fn(&mut [u8]) -> bool
 }
 impl Operator
 {
@@ -83,6 +80,8 @@ pub enum SpecialOperator
 	None,
 	NewThread,
 	Send,
-	Receive
+	Receive,
+	CopyToGlobal,
+	CopyFromGlobal,
 
 }
