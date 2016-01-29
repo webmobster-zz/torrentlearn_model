@@ -81,7 +81,7 @@ impl<T: FitnessEvaluator> GlobalState<T>
 		self.fitness_evaluator=Some(problem);
 	}
 
-	//FIXME
+	//FIXME:  This needs to be reworked
 	pub fn unique_graphvec_copy(&self) -> (Graph,Vec<u64>)
 	{
 		(self.graph.clone(),self.vec.clone())

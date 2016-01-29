@@ -2,7 +2,12 @@ use super::FitnessEvaluator;
 use std::str::FromStr;
 use std::fmt;
 use rand::Rng;
+use std::sync::Arc;
 
+/// Used to contain the information shared with the operator provided, wrapped in an RC
+/// to keep track of uses and when the operator provider can drop whatever is holding the
+/// code the function pointer references
+pub trait DropHelper{}
 
 pub trait OperatorProvider
 {
@@ -13,13 +18,13 @@ pub trait OperatorProvider
 	fn random_with_successors(&self,rng: &mut Rng, suc: u8) -> Operator;
 }
 
-#[derive(Copy)]
 pub struct Operator
 {
 	uuid: UUID,
 	special: SpecialOperator,
 	successors: u8,
-	op: fn(&mut [u8]) -> bool
+	op: fn(&mut [u8]) -> bool,
+    drop_helper: Arc<Box<DropHelper>>
 }
 impl Operator
 {
@@ -33,7 +38,7 @@ impl Operator
 impl Clone for Operator
 {
 	fn clone(&self) -> Operator {
-        Operator{ uuid: self.uuid, special: self.special, op: self.op, successors: self.successors}
+        Operator{ uuid: self.uuid, special: self.special, op: self.op, successors: self.successors, drop_helper: self.drop_helper.clone()}
 	}
 }
 

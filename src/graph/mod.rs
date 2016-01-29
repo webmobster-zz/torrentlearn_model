@@ -54,8 +54,7 @@ impl Graph
 
 	}
 
-	// FIXME
-	/// Deprecated
+	// FIXME: Deprecated
 	pub fn get_size(& self) -> usize
 	{
 		self.list.len()
