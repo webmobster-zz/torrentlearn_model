@@ -24,7 +24,8 @@ pub struct Operator
 	special: SpecialOperator,
 	successors: u8,
 	op: fn(&mut [u8]) -> bool,
-    drop_helper: Arc<Box<DropHelper>>
+    drop_helper: Arc<DropHelper>,
+    parts: Arc<Vec<UUID>>
 }
 impl Operator
 {
@@ -38,7 +39,7 @@ impl Operator
 impl Clone for Operator
 {
 	fn clone(&self) -> Operator {
-        Operator{ uuid: self.uuid, special: self.special, op: self.op, successors: self.successors, drop_helper: self.drop_helper.clone()}
+        Operator{ uuid: self.uuid, special: self.special, op: self.op, successors: self.successors, drop_helper: self.drop_helper.clone(), parts: self.parts.clone()}
 	}
 }
 

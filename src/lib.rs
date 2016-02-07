@@ -2,6 +2,7 @@
 extern crate rand;
 pub mod processor;
 pub mod operator;
+pub mod parse;
 
 mod state;
 mod graph;
