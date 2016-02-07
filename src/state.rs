@@ -1,12 +1,12 @@
 use super::Graph;
-
-use std::cmp::Ordering;
+use std::cmp;
 use std::cmp::Ordering::{Less,Equal,Greater};
-use std::sync::{Arc, Mutex};
-
+use std::sync::{Arc};
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic;
 
 const ARRAY_SIZE: usize = 1000;
-
+const DEFAULT_ORDERING: atomic::Ordering = atomic::Ordering::SeqCst;
 
 pub trait FitnessEvaluator
 {
@@ -28,15 +28,15 @@ pub struct GlobalState<T: FitnessEvaluator>
 	pub vec: GlobalMemory,
 
 	pub graph: Graph,
-	pub life: Option<Arc<Mutex<u64>>>,
+	pub life: Option<Arc<AtomicUsize>>,
 
 	//mutable by multiple threads
 	//pub comm: Option<Arc<Mutex<BiChannel<StateIO>>>>,
-	pub thread_count: Option<Arc<Mutex<u64>>>,
+	pub thread_count: Option<Arc<AtomicUsize>>,
 
 
 	//Persistant after evaluation but not after selection
-	pub fitness: Option<Arc<Mutex<u64>>>,
+	pub fitness: Option<Arc<AtomicUsize>>,
 
 	pub fitness_evaluator: Option<T>
 
@@ -64,7 +64,7 @@ impl<T: FitnessEvaluator> GlobalState<T>
 
 	pub fn evaluated_is_sane(&self ) -> bool
 	{
-		self.life.is_some() && *self.thread_count.as_ref().unwrap().lock().unwrap() == 0 && self.fitness.is_some()
+		self.life.is_some() && self.thread_count.as_ref().unwrap().load(DEFAULT_ORDERING) == 0 && self.fitness.is_some()
 	}
 
 	pub fn cleanup(&mut self)
@@ -75,7 +75,7 @@ impl<T: FitnessEvaluator> GlobalState<T>
 
 	pub fn initialize(&mut self,life: u64, problem: T )
 	{
-		self.life=Some(Arc::new(Mutex::new(life)));
+		self.life=Some(Arc::new(AtomicUsize::new(life as usize)));
 		self.thread_count=None;
 		self.fitness=None;
 		self.fitness_evaluator=Some(problem);
@@ -89,9 +89,7 @@ impl<T: FitnessEvaluator> GlobalState<T>
 	}
 	pub fn get_fitness(&self) -> u64
 	{
-		let fitness = self.fitness.clone().unwrap();
-		let lockfit =  *fitness.lock().unwrap();
-		lockfit
+		self.fitness.as_ref().unwrap().load(DEFAULT_ORDERING) as u64
 	}
 
 }
@@ -108,22 +106,11 @@ impl<T: FitnessEvaluator> Eq for GlobalState<T>
 impl<T: FitnessEvaluator> PartialOrd for GlobalState<T>
 {
 
-	fn partial_cmp(&self, other: &GlobalState<T>) -> Option<Ordering>
+	fn partial_cmp(&self, other: &GlobalState<T>) -> Option<cmp::Ordering>
 	{
-		let lockself: u64;
-		let lockother: u64;
-		{
-			let fitness_self = self.fitness.clone().unwrap();
-			lockself =  *fitness_self.lock().unwrap();
 
-		}
-		{
-			let fitness_other = other.fitness.clone().unwrap();
-			lockother =  *fitness_other.lock().unwrap();
-		}
-
-		if lockself < lockother { Some(Less) }
-    		else if lockself > lockother { Some(Greater) }
+		if (self.fitness.as_ref().unwrap().load(DEFAULT_ORDERING) as u64)  < (other.fitness.as_ref().unwrap().load(DEFAULT_ORDERING) as u64) {Some(Less)}
+    		else if self.fitness.as_ref().unwrap().load(DEFAULT_ORDERING) as u64  > other.fitness.as_ref().unwrap().load(DEFAULT_ORDERING) as u64 { Some(Greater) }
     		else { Some(Equal) }
 
 	}
@@ -138,19 +125,8 @@ impl<T: FitnessEvaluator> PartialEq for GlobalState<T>
 
 	fn  eq(&self, other: &GlobalState<T>) -> bool
 	{
-		let lockself: u64;
-		let lockother: u64;
-		{
-			let fitness_self = self.fitness.clone().unwrap();
-			lockself =  *fitness_self.lock().unwrap();
 
-		}
-		{
-			let fitness_other = other.fitness.clone().unwrap();
-			lockother =  *fitness_other.lock().unwrap();
-		}
-
-		if lockself == lockother { true }
+		if (self.fitness.as_ref().unwrap().load(DEFAULT_ORDERING) as u64)  == (other.fitness.as_ref().unwrap().load(DEFAULT_ORDERING) as u64) { true }
     		else {false}
 
 	}
@@ -161,25 +137,11 @@ impl<T: FitnessEvaluator> PartialEq for GlobalState<T>
 impl<T: FitnessEvaluator> Ord for GlobalState<T>
 {
 
-	fn cmp(&self, other: &GlobalState<T>) -> Ordering
+	fn cmp(&self, other: &GlobalState<T>) -> cmp::Ordering
 	{
 
+        self.partial_cmp(other).unwrap()
 
-		let lockself: u64;
-		let lockother: u64;
-		{
-			let fitness_self = self.fitness.clone().unwrap();
-			lockself =  *fitness_self.lock().unwrap();
-
-		}
-		{
-			let fitness_other = other.fitness.clone().unwrap();
-			lockother =  *fitness_other.lock().unwrap();
-		}
-
-		if lockself < lockother { Less }
-    		else if lockself > lockother { Greater }
-    		else { Equal }
 
 	}
 

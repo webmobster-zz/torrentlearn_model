@@ -1,8 +1,11 @@
-use super::FitnessEvaluator;
+use FitnessEvaluator;
+use parse::ParseTree;
 use std::str::FromStr;
 use std::fmt;
 use rand::Rng;
 use std::sync::Arc;
+use std::sync::Mutex;
+
 
 /// Used to contain the information shared with the operator provided, wrapped in an RC
 /// to keep track of uses and when the operator provider can drop whatever is holding the
@@ -16,16 +19,28 @@ pub trait OperatorProvider
 	//dynamic dispatch as no paramitzed types in a trait
 	fn random(&self,rng: &mut Rng) ->Operator;
 	fn random_with_successors(&self,rng: &mut Rng, suc: u8) -> Operator;
+    fn combine(&mut self, parts: Vec<ParseTree>) -> Operator;
+    fn split(&mut self, parts: Vec<ParseTree>, point: u32) -> (Operator,Operator);
+
+}
+
+pub struct UncompiledOperator
+{
+    pub parse_tree: ParseTree,
+    pub costs: Vec<u64>
+
 }
 
 pub struct Operator
 {
-	uuid: UUID,
-	special: SpecialOperator,
-	successors: u8,
-	op: fn(&mut [u8]) -> bool,
-    drop_helper: Arc<DropHelper>,
-    parts: Arc<Vec<UUID>>
+	pub special: SpecialOperator,
+	pub successors: u8,
+    pub cost: u64,
+    //FIXME
+	pub op: fn(&mut [u8]) -> bool,
+    //FIXME: Can we get rid of arc mutex from the field and pull them into the trait instead?
+    pub drop_helper: Arc<Mutex<DropHelper + Send>>,
+    pub parts: Arc<ParseTree>
 }
 impl Operator
 {
@@ -33,28 +48,36 @@ impl Operator
 	{
 		self.successors
 	}
+    pub fn cost(&self) -> u64
+	{
+		self.cost
+	}
+    pub fn get_special(&self) -> SpecialOperator
+    {
+        self.special
+    }
 
 }
 
 impl Clone for Operator
 {
 	fn clone(&self) -> Operator {
-        Operator{ uuid: self.uuid, special: self.special, op: self.op, successors: self.successors, drop_helper: self.drop_helper.clone(), parts: self.parts.clone()}
+        Operator{ cost: self.cost, special: self.special, op: self.op, successors: self.successors, drop_helper: self.drop_helper.clone(), parts: self.parts.clone()}
 	}
 }
 
+//FIXME
 impl fmt::Debug for Operator
 {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Operator")
-			.field("uuid", &self.uuid)
 	        .field("special", &self.special)
 			.field("sucessors", &self.successors)
 	        .finish()
 		}
 }
 
-//TODO UUID string representation should be a fixed size hexadecimal string for both debug and
+//TODO: UUID string representation should be a fixed size hexadecimal string for both debug and
 //display
 #[derive(Clone,Debug,Copy,Eq,PartialEq,Hash)]
 pub struct UUID {pub x: [u64;2]}

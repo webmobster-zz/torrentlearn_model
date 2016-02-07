@@ -16,6 +16,8 @@ pub use operator::UUID;
 pub use operator::Operator;
 pub use operator::SpecialOperator;
 pub use operator::OperatorProvider;
+pub use operator::UncompiledOperator;
+
 
 pub use graph::Graph;
 pub use graph::Node;
