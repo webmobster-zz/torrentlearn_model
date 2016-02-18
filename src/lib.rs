@@ -14,9 +14,8 @@ pub use state::FitnessEvaluator;
 
 pub use operator::UUID;
 pub use operator::Operator;
-pub use operator::SpecialOperator;
+pub use parse::SpecialOperator;
 pub use operator::OperatorProvider;
-pub use operator::UncompiledOperator;
 
 
 pub use graph::Graph;

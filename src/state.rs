@@ -5,7 +5,7 @@ use std::sync::{Arc};
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic;
 
-const ARRAY_SIZE: usize = 1000;
+pub const ARRAY_SIZE: usize = 1000;
 const DEFAULT_ORDERING: atomic::Ordering = atomic::Ordering::SeqCst;
 
 pub trait FitnessEvaluator

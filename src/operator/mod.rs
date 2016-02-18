@@ -1,10 +1,12 @@
 use FitnessEvaluator;
 use parse::ParseTree;
+use parse::SpecialOperator;
 use std::str::FromStr;
 use std::fmt;
 use rand::Rng;
 use std::sync::Arc;
 use std::sync::Mutex;
+
 
 
 /// Used to contain the information shared with the operator provided, wrapped in an RC
@@ -14,20 +16,11 @@ pub trait DropHelper{}
 
 pub trait OperatorProvider
 {
-	fn get_random(&self) -> Operator;
-	fn get_slice(&self) -> &[Operator];
 	//dynamic dispatch as no paramitzed types in a trait
-	fn random(&self,rng: &mut Rng) ->Operator;
-	fn random_with_successors(&self,rng: &mut Rng, suc: u8) -> Operator;
+	fn random<T: Rng>(&mut self,rng: &mut T) ->Operator;
+	fn random_with_successors<T: Rng>(&mut self,rng: &mut T, suc: u8) -> Operator;
     fn combine(&mut self, parts: Vec<ParseTree>) -> Operator;
-    fn split(&mut self, parts: Vec<ParseTree>, point: u32) -> (Operator,Operator);
-
-}
-
-pub struct UncompiledOperator
-{
-    pub parse_tree: ParseTree,
-    pub costs: Vec<u64>
+    fn split(&mut self, parts: ParseTree, point: usize) -> (Operator,Operator);
 
 }
 
@@ -39,8 +32,8 @@ pub struct Operator
     //FIXME
 	pub op: fn(&mut [u8]) -> bool,
     //FIXME: Can we get rid of arc mutex from the field and pull them into the trait instead?
-    pub drop_helper: Arc<Mutex<DropHelper + Send>>,
-    pub parts: Arc<ParseTree>
+    pub drop_helper: Option<Arc<Mutex<DropHelper + Send>>>,
+    pub parts: Option<Arc<ParseTree>>
 }
 impl Operator
 {
@@ -99,18 +92,4 @@ impl fmt::Display for UUID {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}_{}", self.x[0], self.x[1])
     }
-}
-
-
-
-#[derive(Clone,Debug,Copy)]
-pub enum SpecialOperator
-{
-	None,
-	NewThread,
-	Send,
-	Receive,
-	CopyToGlobal,
-	CopyFromGlobal,
-
 }
