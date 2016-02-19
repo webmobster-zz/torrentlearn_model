@@ -57,6 +57,33 @@ pub enum GeneratedResult{
     SpecialOperator(Operator)
 }
 
+pub fn generate_function_with_sucessors<T: Rng>(enabled_operators: &Vec<(AllOperators,f32)>, cost_calculator: fn(&AllOperators)-> u64, rng: &mut T,suc: u8) -> GeneratedResult {
+    let mut generated_operator: Option<AllOperators> =None;
+	let sample = rng.gen::<f32>();
+
+	//unchecked for correctness
+	let mut running_total = 0.0;
+
+	for i in 0..enabled_operators.len()
+	{
+        if check_successors(enabled_operators[i].1)
+        {
+    		running_total+=enabled_operators[i].1;
+
+
+    		if sample < running_total
+    		{
+    			generated_operator=Some(enabled_operators[i].0);
+                break
+    		}
+        }
+	}
+    match generated_operator.unwrap()
+    {
+        AllOperators::Special(special) => GeneratedResult::SpecialOperator(generate_special_operator(special,cost_calculator)),
+        _ => unimplemented!()//parsetree::generate_parse_tree(generated_operator)
+    }
+}
 pub fn generate_function<T: Rng>(enabled_operators: &Vec<(AllOperators,f32)>, cost_calculator: fn(&AllOperators)-> u64, rng: &mut T) -> GeneratedResult {
     let mut generated_operator: Option<AllOperators> =None;
 	let sample = rng.gen::<f32>();
@@ -81,6 +108,8 @@ pub fn generate_function<T: Rng>(enabled_operators: &Vec<(AllOperators,f32)>, co
         _ => unimplemented!()//parsetree::generate_parse_tree(generated_operator)
     }
 }
+
+
 fn generate_special_operator(special: SpecialOperator, cost_calculator: fn(&AllOperators)-> u64) -> Operator
 {
     let sucessors;
@@ -90,7 +119,6 @@ fn generate_special_operator(special: SpecialOperator, cost_calculator: fn(&AllO
     }
     Operator{ cost: cost_calculator(&AllOperators::Special(special)), special: special, op: dummy, successors: sucessors, drop_helper: None, parts: None}
 }
-
 pub fn dummy(_:&mut [u8]) ->bool
 {
     panic!("Should never be called")
