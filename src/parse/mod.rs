@@ -70,7 +70,7 @@ pub fn generate_function_with_sucessors<T: Rng>(enabled_operators: &mut Vec<Weig
         AllOperators::Special(special) => {
             GeneratedResult::SpecialOperator(generate_special_operator(special, cost_calculator))
         }
-        _ => unimplemented!(),//parsetree::generate_parse_tree(generated_operator)
+        _ => GeneratedResult::Tree(parsetree::ParseTree::generate_parse_tree(generated_operator,rng))
     }
 }
 pub fn generate_function<T: Rng>(enabled_operators: &mut Vec<Weighted<AllOperators>>,
@@ -83,7 +83,7 @@ pub fn generate_function<T: Rng>(enabled_operators: &mut Vec<Weighted<AllOperato
         AllOperators::Special(special) => {
             GeneratedResult::SpecialOperator(generate_special_operator(special, cost_calculator))
         }
-        _ => unimplemented!(),//parsetree::generate_parse_tree(generated_operator)
+        _ => GeneratedResult::Tree(parsetree::ParseTree::generate_parse_tree(generated_operator,rng))
     }
 }
 
@@ -95,7 +95,7 @@ fn generate_special_operator(special: SpecialOperator,
         SpecialOperator::NewThread => {
             sucessors = 2;
         }
-        _ => unimplemented!(),
+        _ => {sucessors =1},
     }
     Operator {
         cost: cost_calculator(&AllOperators::Special(special)),

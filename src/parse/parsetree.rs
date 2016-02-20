@@ -5,6 +5,8 @@ use super::ReduceOperators;
 use super::ConditionalOperators;
 use super::AllOperators;
 use std::mem;
+use rand::Rng;
+
 // As each compiled operator can have 2 exit values that can only be rpresented by one ConditionalStatement
 // split so therefore for simplicites sake I have defined a compiled operator as a list of SingleOperators
 // followed by one conditonal ones
@@ -28,6 +30,16 @@ impl ParseTree {
             &ParseTree::EndSingle(_) => 1,
             &ParseTree::EndConditional(_) => 1,
             &ParseTree::Continuation(ref parsetree, _) => 1 + parsetree.size(),
+        }
+    }
+    pub fn generate_parse_tree<T: Rng>(generated_operator: AllOperators, mut rng: &mut T) -> ParseTree {
+        match generated_operator {
+            AllOperators::Single(op) => ParseTree::EndSingle(Statement::SingleStatement(op,Position::random(&mut rng),Data::random(&mut rng))),
+            AllOperators::Vec(op) => ParseTree::EndSingle(Statement::VecStatement(op,Position::random(&mut rng),Position::random(&mut rng),Position::random(&mut rng))),
+            AllOperators::Map(op) => ParseTree::EndSingle(Statement::MapStatement(op,Position::random(&mut rng),Position::random(&mut rng),Data::random(&mut rng))),
+            AllOperators::Reduce(op) => ParseTree::EndSingle(Statement::ReduceStatement(op,Position::random(&mut rng),Position::random(&mut rng),Position::random(&mut rng))),
+            AllOperators::Conditional(op) => ParseTree::EndConditional(ConditionalStatement(op,Position::random(&mut rng),Data::random(&mut rng))),
+            AllOperators::Special(_) => panic!("This shouldn't be here")
         }
     }
     // TODO: Check logic/unit test and rework as its kinda ugly
@@ -99,7 +111,7 @@ pub enum Statement {
     // dest low, length dest, source
     MapStatement(MapOperators, Position, Position, Data),
     // dest, source low, source length
-    ReduceStatement(ReduceOperators, Position, Data, Data),
+    ReduceStatement(ReduceOperators, Position, Position, Position),
 }
 impl Statement {
     pub fn operator(&self) -> AllOperators {
@@ -116,9 +128,27 @@ pub enum Data {
     Val(u64),
     Pos(Position),
 }
+impl Data {
+    pub fn random<T: Rng>(mut rng: T) -> Data {
+        if rng.gen() {
+            Data::Val(rng.gen())
+        } else {
+            Data::Pos(Position::random(rng))
+        }
+    }
+}
 #[derive(Clone,Copy)]
 pub enum Position {
     ConstPos(u64),
     // Is this the first, second, etc argument
-    VarPos(u8),
+    VarPos,
+}
+impl Position {
+    pub fn random<T: Rng>(mut rng: T) -> Position {
+        if rng.gen() {
+            Position::ConstPos(rng.gen())
+        } else {
+            Position::VarPos
+        }
+    }
 }
