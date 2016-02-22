@@ -15,8 +15,8 @@ pub trait DropHelper{}
 pub trait OperatorProvider
 {
     // dynamic dispatch as no paramitzed types in a trait
-    fn random<T: Rng>(&mut self, rng: &mut T) -> Operator;
-    fn random_with_successors<T: Rng>(&mut self, rng: &mut T, suc: u8) -> Operator;
+    fn random(&mut self, rng: &mut Rng) -> Operator;
+    fn random_with_successors(&mut self, rng: &mut Rng, suc: u8) -> Operator;
     fn combine(&mut self, parts: Vec<ParseTree>) -> Operator;
     fn split(&mut self, parts: ParseTree, point: usize) -> (Operator, Operator);
 
