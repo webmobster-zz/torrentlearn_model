@@ -42,9 +42,6 @@ pub enum SpecialOperator {
 pub enum AllOperators {
     Single(SingleOperators),
     Conditional(ConditionalOperators),
-    Vec(VecOperators),
-    Map(MapOperators),
-    Reduce(ReduceOperators),
     Special(SpecialOperator),
 }
 pub enum GeneratedResult {
@@ -70,6 +67,7 @@ pub fn generate_function_with_sucessors<T: Rng>(enabled_operators: &mut Vec<Weig
         AllOperators::Special(special) => {
             GeneratedResult::SpecialOperator(generate_special_operator(special, cost_calculator))
         }
+        //FIXME
         _ => GeneratedResult::Tree(parsetree::ParseTree::generate_parse_tree(generated_operator,rng))
     }
 }
@@ -83,6 +81,7 @@ pub fn generate_function<T: Rng>(enabled_operators: &mut Vec<Weighted<AllOperato
         AllOperators::Special(special) => {
             GeneratedResult::SpecialOperator(generate_special_operator(special, cost_calculator))
         }
+        //FIXME
         _ => GeneratedResult::Tree(parsetree::ParseTree::generate_parse_tree(generated_operator,rng))
     }
 }
@@ -95,6 +94,7 @@ fn generate_special_operator(special: SpecialOperator,
         SpecialOperator::NewThread => {
             sucessors = 2;
         }
+        //FIXME
         _ => {sucessors =1},
     }
     Operator {
@@ -112,8 +112,10 @@ fn check_successors(operator: AllOperators, suc: u8) -> bool{
         AllOperators::Conditional(_) => 2,
         AllOperators::Special(special) => match special {
             SpecialOperator::NewThread => 2,
+            //FIXME
             _ => 1
         },
+        //FIXME
         _ => 1
     };
     if result == suc {

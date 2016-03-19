@@ -1,7 +1,4 @@
 use super::SingleOperators;
-use super::VecOperators;
-use super::MapOperators;
-use super::ReduceOperators;
 use super::ConditionalOperators;
 use super::AllOperators;
 use std::mem;
@@ -10,6 +7,7 @@ use rand::Rng;
 // As each compiled operator can have 2 exit values that can only be rpresented by one ConditionalStatement
 // split so therefore for simplicites sake I have defined a compiled operator as a list of SingleOperators
 // followed by one conditonal ones
+#[derive(Clone)]
 pub enum ParseTree {
     Continuation(Box<ParseTree>, Statement),
     EndSingle(Statement),
@@ -35,9 +33,6 @@ impl ParseTree {
     pub fn generate_parse_tree<T: Rng>(generated_operator: AllOperators, mut rng: &mut T) -> ParseTree {
         match generated_operator {
             AllOperators::Single(op) => ParseTree::EndSingle(Statement::SingleStatement(op,Position::random(&mut rng),Data::random(&mut rng))),
-            AllOperators::Vec(op) => ParseTree::EndSingle(Statement::VecStatement(op,Position::random(&mut rng),Position::random(&mut rng),Position::random(&mut rng))),
-            AllOperators::Map(op) => ParseTree::EndSingle(Statement::MapStatement(op,Position::random(&mut rng),Position::random(&mut rng),Data::random(&mut rng))),
-            AllOperators::Reduce(op) => ParseTree::EndSingle(Statement::ReduceStatement(op,Position::random(&mut rng),Position::random(&mut rng),Position::random(&mut rng))),
             AllOperators::Conditional(op) => ParseTree::EndConditional(ConditionalStatement(op,Position::random(&mut rng),Data::random(&mut rng))),
             AllOperators::Special(_) => panic!("This shouldn't be here")
         }
@@ -48,11 +43,11 @@ impl ParseTree {
         if position > 0 {
             match *self {
                 ParseTree::Continuation(ref mut parsetree, _) => parsetree.split_off(position - 1),
-                _ => None,
+                ParseTree::EndConditional(_) |  ParseTree::EndSingle(_) => None,
             }
         } else {
-            match self {
-                &mut ParseTree::Continuation(_, statement) => {
+            match self.clone() {
+                ParseTree::Continuation(_, statement) => {
                     let mut new = ParseTree::EndSingle(statement);
                     {
                         let new_mut = &mut new;
@@ -60,15 +55,15 @@ impl ParseTree {
                     }
                     match new {
                         ParseTree::Continuation(parsetree, _) => Some(*parsetree),
-                        _ => panic!("Invalid logic in method"),
+                        ParseTree::EndConditional(_) |  ParseTree::EndSingle(_) => panic!("Invalid logic in method"),
                     }
                 }
-                _ => None,
+                ParseTree::EndConditional(_) |  ParseTree::EndSingle(_) => None,
             }
         }
     }
     pub fn append(&mut self, tree: ParseTree) {
-        match *self {
+        match self.clone() {
             ParseTree::EndSingle(end_statement) => {
                 *self = ParseTree::Continuation(Box::new(tree), end_statement);
             }
@@ -94,6 +89,7 @@ impl ParseTree {
 }
 
 // dest, source
+#[derive(Clone)]
 pub struct ConditionalStatement(ConditionalOperators, Position, Data);
 impl ConditionalStatement {
     pub fn operator(&self) -> AllOperators {
@@ -102,28 +98,26 @@ impl ConditionalStatement {
     }
 }
 
-#[derive(Clone,Copy)]
+#[derive(Clone)]
 pub enum Statement {
     // dest, source
     SingleStatement(SingleOperators, Position, Data),
     // dest low, source low, length both
-    VecStatement(VecOperators, Position, Position, Position),
+    //VecStatement(VecOperators, Position, Position, Position)
+    /*
     // dest low, length dest, source
     MapStatement(MapOperators, Position, Position, Data),
     // dest, source low, source length
-    ReduceStatement(ReduceOperators, Position, Position, Position),
+    ReduceStatement(ReduceOperators, Position, Position, Position),*/
 }
 impl Statement {
     pub fn operator(&self) -> AllOperators {
         match self {
             &Statement::SingleStatement(operator, _, _) => AllOperators::Single(operator),
-            &Statement::VecStatement(operator, _, _, _) => AllOperators::Vec(operator),
-            &Statement::MapStatement(operator, _, _, _) => AllOperators::Map(operator),
-            &Statement::ReduceStatement(operator, _, _, _) => AllOperators::Reduce(operator),
         }
     }
 }
-#[derive(Clone,Copy)]
+#[derive(Clone)]
 pub enum Data {
     Val(u64),
     Pos(Position),
@@ -137,18 +131,18 @@ impl Data {
         }
     }
 }
-#[derive(Clone,Copy)]
+#[derive(Clone)]
 pub enum Position {
-    ConstPos(u64),
+    EndPos(u64),
     // Is this the first, second, etc argument
-    VarPos,
+    ContPos(Box<Position>),
 }
 impl Position {
     pub fn random<T: Rng>(mut rng: T) -> Position {
         if rng.gen() {
-            Position::ConstPos(rng.gen())
+            Position::EndPos(rng.gen())
         } else {
-            Position::VarPos
+            Position::ContPos(Box::new(Position::random(rng)))
         }
     }
 }
