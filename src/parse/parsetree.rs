@@ -90,7 +90,7 @@ impl ParseTree {
 
 // dest, source
 #[derive(Clone)]
-pub struct ConditionalStatement(ConditionalOperators, Position, Data);
+pub struct ConditionalStatement(pub ConditionalOperators, pub Position, pub Data);
 impl ConditionalStatement {
     pub fn operator(&self) -> AllOperators {
         let ConditionalStatement(operator, _, _) = *self;

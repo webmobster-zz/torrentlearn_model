@@ -15,7 +15,7 @@ pub enum SingleOperators {
 }
 #[derive(Copy,Clone)]
 pub enum ConditionalOperators {
-    Equal,
+    Equals,
 }
 #[derive(Copy,Clone)]
 pub enum VecOperators {

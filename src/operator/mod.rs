@@ -12,6 +12,9 @@ use std::sync::Mutex;
 /// code the function pointer references
 pub trait DropHelper{}
 
+
+//FIXME: Look into how dropping can be done better in respects to dropflags and trait objects
+
 pub trait OperatorProvider
 {
     // dynamic dispatch as no paramitzed types in a trait
@@ -28,7 +31,7 @@ pub struct Operator {
     pub cost: u64,
     // FIXME
     pub op: fn(&mut [u8]) -> bool,
-    // FIXME: Can we get rid of arc mutex from the field and pull them into the trait instead?
+    //FIXME: Look into how dropping can be done better in respects to dropflags and trait objects
     pub drop_helper: Option<Arc<Mutex<DropHelper + Send>>>,
     pub parts: Option<Arc<ParseTree>>,
 }
