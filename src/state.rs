@@ -130,7 +130,7 @@ impl<T: FitnessEvaluator> Ord for GlobalState<T> {
 #[derive(Copy)]
 pub struct LocalState {
     pub node: Option<usize>,
-    pub local_array: [u8; ARRAY_SIZE],
+    pub local_array: [u64; ARRAY_SIZE],
 }
 
 impl LocalState {

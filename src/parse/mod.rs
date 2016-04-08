@@ -125,6 +125,6 @@ fn check_successors(operator: AllOperators, suc: u8) -> bool{
     }
 }
 
-pub fn dummy(_: &mut [u8]) -> bool {
+pub fn dummy(_: &mut [u64]) -> bool {
     panic!("Should never be called")
 }

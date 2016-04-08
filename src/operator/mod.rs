@@ -30,7 +30,7 @@ pub struct Operator {
     pub successors: u8,
     pub cost: u64,
     // FIXME
-    pub op: fn(&mut [u8]) -> bool,
+    pub op: fn(&mut [u64]) -> bool,
     //FIXME: Look into how dropping can be done better in respects to dropflags and trait objects
     pub drop_helper: Option<Arc<Mutex<DropHelper + Send>>>,
     pub parts: Option<Arc<ParseTree>>,
