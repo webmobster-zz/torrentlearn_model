@@ -5,12 +5,13 @@ use std::str::FromStr;
 use std::fmt;
 use rand::Rng;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 /// Used to contain the information shared with the operator provided, wrapped in an RC
 /// to keep track of uses and when the operator provider can drop whatever is holding the
 /// code the function pointer references
-pub trait DropHelper{}
+pub trait DropHelper: Send {
+    fn trait_clone(&self) -> Box<DropHelper>;
+}
 
 
 //FIXME: Look into how dropping can be done better in respects to dropflags and trait objects
@@ -32,7 +33,7 @@ pub struct Operator {
     // FIXME
     pub op: fn(&mut [u64]) -> bool,
     //FIXME: Look into how dropping can be done better in respects to dropflags and trait objects
-    pub drop_helper: Option<Arc<Mutex<DropHelper + Send>>>,
+    pub drop_helper: Option<Box<DropHelper>>,
     pub parts: Option<Arc<ParseTree>>,
 }
 impl Operator {
@@ -54,7 +55,10 @@ impl Clone for Operator {
             special: self.special,
             op: self.op,
             successors: self.successors,
-            drop_helper: self.drop_helper.clone(),
+            drop_helper: match &self.drop_helper{
+                &None => None,
+                &Some(ref x) => Some(x.trait_clone())
+            },
             parts: self.parts.clone(),
         }
     }
